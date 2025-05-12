@@ -90,8 +90,6 @@ The Prettier configuration is defined in the `.prettierrc` file, ensuring consis
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-```
-
 ### Explanation:
 1. **Installation**: This section describes how to set up the project locally.
 2. **Usage**: Describes how to run the project, both in development and production modes.
