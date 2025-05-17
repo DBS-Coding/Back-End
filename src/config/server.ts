@@ -1,6 +1,9 @@
 import Hapi, { Server } from '@hapi/hapi';
-import routes from '../routes/routes';
+import authRoutes from '../routes/auth.routes';
+import  chatbotRoutes  from '../routes/chatbot.routes';
+import  healthRoute from '../routes/health.routes';
 import dotenv from 'dotenv';
+
 dotenv.config();
 
 export const initServer = async (): Promise<Server> => {
@@ -16,7 +19,9 @@ export const initServer = async (): Promise<Server> => {
     },
   });
 
-  server.route(routes);
+  server.route(authRoutes);
+  server.route(chatbotRoutes);
+  server.route(healthRoute);
 
   return server;
 };
