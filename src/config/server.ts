@@ -2,6 +2,7 @@ import Hapi, { Server } from '@hapi/hapi';
 import authRoutes from '../routes/auth.routes';
 import  chatbotRoutes  from '../routes/chatbot.routes';
 import  healthRoute from '../routes/health.routes';
+import { initWebSocket } from "../controllers/websocketController"
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -22,6 +23,6 @@ export const initServer = async (): Promise<Server> => {
   server.route(authRoutes);
   server.route(chatbotRoutes);
   server.route(healthRoute);
-
+  initWebSocket(server);
   return server;
 };
