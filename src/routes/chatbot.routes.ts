@@ -5,7 +5,8 @@ import {
   getAllChatbotTags,
   getChatbotTag,
   deleteChatbotTag,
-  processChatbotInput
+  processChatbotInput,
+  getChatbotByNama
 } from '../controllers/chatbotController';
 
 const chatbotRoutes: ServerRoute[] = [
@@ -16,6 +17,7 @@ const chatbotRoutes: ServerRoute[] = [
     options: {
       validate: {
         payload: Joi.object({
+          nama: Joi.string().allow(null, '').optional(),
           tag: Joi.string().required(),
           input: Joi.array().items(Joi.string()).min(1).required(),
           responses: Joi.array().items(Joi.string()).min(1).required()
@@ -27,6 +29,11 @@ const chatbotRoutes: ServerRoute[] = [
     method: 'GET',
     path: '/chatbot/tags',
     handler: getAllChatbotTags
+  },
+  {
+    method: 'GET',
+    path: '/chatbot/tags/nama/{nama}',
+    handler: getChatbotByNama
   },
   {
     method: 'GET',

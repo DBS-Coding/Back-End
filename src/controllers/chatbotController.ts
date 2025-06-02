@@ -5,6 +5,7 @@ import Joi from 'joi';
 
 // Interface for chatbot data
 interface ChatbotData {
+  nama: string;
   tag: string;
   input: string[];
   responses: string[];
@@ -12,6 +13,7 @@ interface ChatbotData {
 
 // Validation schema
 const chatbotSchema = Joi.object({
+  nama: Joi.string().allow(null, '').optional(),
   tag: Joi.string().required(),
   input: Joi.array().items(Joi.string()).min(1).required(),
   responses: Joi.array().items(Joi.string()).min(1).required()
@@ -28,11 +30,11 @@ export const createOrUpdateChatbotTag = async (req: Request, h: ResponseToolkit)
       return errorResponse(h, validationError.details[0].message, 400);
     }
 
-    // Start a transaction
+    // Start a transaction: insert or update tag
     const { data: tag, error: tagError } = await supabase
       .from('tags')
       .upsert(
-        { tag_name: payload.tag },
+        { tag_name: payload.tag, nama: payload.nama || null },
         { onConflict: 'tag_name' }
       )
       .select()
@@ -40,31 +42,16 @@ export const createOrUpdateChatbotTag = async (req: Request, h: ResponseToolkit)
 
     if (tagError) throw tagError;
 
-    // Delete existing inputs and responses for this tag
-    const { error: deleteInputsError } = await supabase
-      .from('inputs')
-      .delete()
-      .eq('tag_id', tag.id);
-
-    if (deleteInputsError) throw deleteInputsError;
-
-    const { error: deleteResponsesError } = await supabase
-      .from('responses')
-      .delete()
-      .eq('tag_id', tag.id);
-
-    if (deleteResponsesError) throw deleteResponsesError;
+    // Delete old inputs and responses
+    await supabase.from('inputs').delete().eq('tag_id', tag.id);
+    await supabase.from('responses').delete().eq('tag_id', tag.id);
 
     // Insert new inputs
     const inputRecords = payload.input.map(text => ({
       tag_id: tag.id,
       input_text: text
     }));
-
-    const { error: inputsError } = await supabase
-      .from('inputs')
-      .insert(inputRecords);
-
+    const { error: inputsError } = await supabase.from('inputs').insert(inputRecords);
     if (inputsError) throw inputsError;
 
     // Insert new responses
@@ -72,19 +59,10 @@ export const createOrUpdateChatbotTag = async (req: Request, h: ResponseToolkit)
       tag_id: tag.id,
       response_text: text
     }));
-
-    const { error: responsesError } = await supabase
-      .from('responses')
-      .insert(responseRecords);
-
+    const { error: responsesError } = await supabase.from('responses').insert(responseRecords);
     if (responsesError) throw responsesError;
 
-    return successResponse(
-      h,
-      { tag: tag.tag_name },
-      201,
-      'Chatbot tag created/updated successfully'
-    );
+    return successResponse(h, { tag: tag.tag_name, nama: tag.nama }, 201, 'Chatbot tag created/updated successfully');
   } catch (err) {
     console.error('Error in createOrUpdateChatbotTag:', err);
     return errorResponse(h, 'Internal server error', 500);
@@ -94,8 +72,6 @@ export const createOrUpdateChatbotTag = async (req: Request, h: ResponseToolkit)
 // Get all chatbot tags with their inputs and responses
 export const getAllChatbotTags = async (req: Request, h: ResponseToolkit) => {
   try {
-
-    // Get all tags
     const { data: tags, error: tagsError } = await supabase
       .from('tags')
       .select('*')
@@ -103,7 +79,6 @@ export const getAllChatbotTags = async (req: Request, h: ResponseToolkit) => {
 
     if (tagsError) throw tagsError;
 
-    // For each tag, get inputs and responses
     const result = await Promise.all(
       tags.map(async tag => {
         const { data: inputs } = await supabase
@@ -118,6 +93,7 @@ export const getAllChatbotTags = async (req: Request, h: ResponseToolkit) => {
 
         return {
           tag: tag.tag_name,
+          nama: tag.nama,
           input: inputs?.map(i => i.input_text) || [],
           responses: responses?.map(r => r.response_text) || []
         };
@@ -139,7 +115,6 @@ export const getChatbotTag = async (req: Request, h: ResponseToolkit) => {
       return errorResponse(h, 'Tag name is required', 400);
     }
 
-    // Get the tag
     const { data: tag, error: tagError } = await supabase
       .from('tags')
       .select('*')
@@ -150,7 +125,6 @@ export const getChatbotTag = async (req: Request, h: ResponseToolkit) => {
       return errorResponse(h, 'Tag not found', 404);
     }
 
-    // Get inputs and responses
     const { data: inputs } = await supabase
       .from('inputs')
       .select('input_text')
@@ -163,6 +137,7 @@ export const getChatbotTag = async (req: Request, h: ResponseToolkit) => {
 
     const result = {
       tag: tag.tag_name,
+      nama: tag.nama,
       input: inputs?.map(i => i.input_text) || [],
       responses: responses?.map(r => r.response_text) || []
     };
@@ -174,12 +149,58 @@ export const getChatbotTag = async (req: Request, h: ResponseToolkit) => {
   }
 };
 
+// get a list all  chatbot by nama
+export const getChatbotByNama = async (req: Request, h: ResponseToolkit) => {
+  try {
+    const nama = req.params.nama;
+    if (!nama) {
+      return errorResponse(h, 'Nama is required', 400);
+    }
+
+    const { data: tags, error: tagsError } = await supabase
+      .from('tags')
+      .select('*')
+      .ilike('nama', `%${nama}%`);
+
+    if (tagsError) throw tagsError;
+
+    if (!tags || tags.length === 0) {
+      return successResponse(h, [], 200, 'No chatbot found with the given name');
+    }
+
+    const result = await Promise.all(
+      tags.map(async tag => {
+        const { data: inputs } = await supabase
+          .from('inputs')
+          .select('input_text')
+          .eq('tag_id', tag.id);
+
+        const { data: responses } = await supabase
+          .from('responses')
+          .select('response_text')
+          .eq('tag_id', tag.id);
+
+        return {
+          tag: tag.tag_name,
+          nama: tag.nama,
+          input: inputs?.map(i => i.input_text) || [],
+          responses: responses?.map(r => r.response_text) || []
+        };
+      })
+    );
+    return successResponse(h, result, 200, 'Chatbots retrieved by name');
+  } catch (err) {
+    console.error('Error in getChatbotByNama:', err);
+    return errorResponse(h, 'Internal server error', 500);
+  }
+}
+
+
 // Delete a chatbot tag
 export const deleteChatbotTag = async (req: Request, h: ResponseToolkit) => {
   try {
     const tagName = req.params.tag;
 
-    // Get the tag first to get its ID
     const { data: tag, error: tagError } = await supabase
       .from('tags')
       .select('id')
@@ -190,7 +211,6 @@ export const deleteChatbotTag = async (req: Request, h: ResponseToolkit) => {
       return errorResponse(h, 'Tag not found', 404);
     }
 
-    // Delete the tag (cascade will delete inputs and responses)
     const { error: deleteError } = await supabase
       .from('tags')
       .delete()
@@ -214,7 +234,6 @@ export const processChatbotInput = async (req: Request, h: ResponseToolkit) => {
       return errorResponse(h, 'Input is required', 400);
     }
 
-    // Search for matching input (case insensitive)
     const { data: matchedInput, error: inputError } = await supabase
       .from('inputs')
       .select('tag_id')
@@ -231,7 +250,6 @@ export const processChatbotInput = async (req: Request, h: ResponseToolkit) => {
       );
     }
 
-    // Get random response from the first matched tag
     const tagId = matchedInput[0].tag_id;
 
     const { data: responses, error: responsesError } = await supabase
@@ -250,7 +268,6 @@ export const processChatbotInput = async (req: Request, h: ResponseToolkit) => {
       );
     }
 
-    // Select random response
     const randomResponse = responses[Math.floor(Math.random() * responses.length)].response_text;
 
     return successResponse(
