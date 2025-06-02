@@ -1,4 +1,4 @@
-# Capstone Project 2025 - Backend
+# HistoTalk - Backend
 
 This project is part of the Capstone Project for 2025 and is focused on building a backend application using Node.js with TypeScript. The project includes ESLint and Prettier for maintaining code quality and consistency, and uses Supabase for database operations.
 
