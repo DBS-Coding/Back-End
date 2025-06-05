@@ -92,6 +92,7 @@ export const getAllChatbotTags = async (req: Request, h: ResponseToolkit) => {
           .eq('tag_id', tag.id);
 
         return {
+          id: tag.id,
           tag: tag.tag_name,
           nama: tag.nama,
           input: inputs?.map(i => i.input_text) || [],
@@ -107,18 +108,18 @@ export const getAllChatbotTags = async (req: Request, h: ResponseToolkit) => {
   }
 };
 
-// Get a specific chatbot tag by name
+// Get a specific chatbot tag by id
 export const getChatbotTag = async (req: Request, h: ResponseToolkit) => {
   try {
-    const tagName = req.params.tag;
-    if (!tagName) {
-      return errorResponse(h, 'Tag name is required', 400);
+    const id = parseInt(req.params.id);
+    if (!id) {
+      return errorResponse(h, 'Tag id is required', 400);
     }
 
     const { data: tag, error: tagError } = await supabase
       .from('tags')
       .select('*')
-      .eq('tag_name', tagName)
+     .eq('id', id)
       .single();
 
     if (tagError || !tag) {
@@ -136,6 +137,7 @@ export const getChatbotTag = async (req: Request, h: ResponseToolkit) => {
       .eq('tag_id', tag.id);
 
     const result = {
+      id : tag.id,
       tag: tag.tag_name,
       nama: tag.nama,
       input: inputs?.map(i => i.input_text) || [],
@@ -181,6 +183,7 @@ export const getChatbotByNama = async (req: Request, h: ResponseToolkit) => {
           .eq('tag_id', tag.id);
 
         return {
+          id: tag.id,
           tag: tag.tag_name,
           nama: tag.nama,
           input: inputs?.map(i => i.input_text) || [],
@@ -199,12 +202,12 @@ export const getChatbotByNama = async (req: Request, h: ResponseToolkit) => {
 // Delete a chatbot tag
 export const deleteChatbotTag = async (req: Request, h: ResponseToolkit) => {
   try {
-    const tagName = req.params.tag;
+    const id = parseInt(req.params.id); 
 
-    const { data: tag, error: tagError } = await supabase
+     const { data: tag, error: tagError } = await supabase
       .from('tags')
       .select('id')
-      .eq('tag_name', tagName)
+      .eq('id', id)
       .single();
 
     if (tagError || !tag) {
@@ -281,3 +284,116 @@ export const processChatbotInput = async (req: Request, h: ResponseToolkit) => {
     return errorResponse(h, 'Internal server error', 500);
   }
 };
+
+
+  // create chat bot 
+  export const createChatbotTag = async (req: Request, h: ResponseToolkit) => {
+  try {
+    const payload = req.payload as ChatbotData;
+
+    const { error: validationError } = chatbotSchema.validate(payload);
+    if (validationError) {
+      return errorResponse(h, validationError.details[0].message, 400);
+    }
+
+    // Check if tag already exists
+    const { data: existingTag, error: fetchError } = await supabase
+      .from('tags')
+      .select()
+      .eq('tag_name', payload.tag)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+    if (existingTag) {
+      return errorResponse(h, 'Tag already exists. Use update endpoint instead.', 409);
+    }
+
+    // Insert new tag
+    const { data: tag, error: tagError } = await supabase
+      .from('tags')
+      .insert({ tag_name: payload.tag, nama: payload.nama || null })
+      .select()
+      .single();
+
+    if (tagError) throw tagError;
+
+    // Insert inputs
+    const inputRecords = payload.input.map(text => ({
+      tag_id: tag.id,
+      input_text: text
+    }));
+    const { error: inputsError } = await supabase.from('inputs').insert(inputRecords);
+    if (inputsError) throw inputsError;
+
+    // Insert responses
+    const responseRecords = payload.responses.map(text => ({
+      tag_id: tag.id,
+      response_text: text
+    }));
+    const { error: responsesError } = await supabase.from('responses').insert(responseRecords);
+    if (responsesError) throw responsesError;
+
+    return successResponse(h, { tag: tag.tag_name, nama: tag.nama }, 201, 'Chatbot tag created successfully');
+  } catch (err) {
+    console.error('Error in createChatbotTag:', err);
+    return errorResponse(h, 'Internal server error', 500);
+  }
+};
+
+// Update an chat bot 
+export const updateChatbotTag = async (req: Request, h: ResponseToolkit) => {
+  try {
+    const id = parseInt(req.params.id); 
+    const payload = req.payload as ChatbotData;
+
+    const { error: validationError } = chatbotSchema.validate(payload);
+    if (validationError) {
+      return errorResponse(h, validationError.details[0].message, 400);
+    }
+
+    // Cek apakah tag dengan ID tersebut ada
+    const { data: tag, error: tagError } = await supabase
+      .from('tags')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (tagError || !tag) {
+      return errorResponse(h, 'Tag not found', 404);
+    }
+
+    // Update tag
+    const { error: updateError } = await supabase
+      .from('tags')
+      .update({ tag_name: payload.tag, nama: payload.nama || null })
+      .eq('id', id);
+
+    if (updateError) throw updateError;
+
+    // Hapus input dan response lama
+    await supabase.from('inputs').delete().eq('tag_id', id);
+    await supabase.from('responses').delete().eq('tag_id', id);
+
+    // Insert input baru
+    const inputRecords = payload.input.map(text => ({
+      tag_id: id,
+      input_text: text
+    }));
+    const { error: inputsError } = await supabase.from('inputs').insert(inputRecords);
+    if (inputsError) throw inputsError;
+
+    // Insert response baru
+    const responseRecords = payload.responses.map(text => ({
+      tag_id: id,
+      response_text: text
+    }));
+    const { error: responsesError } = await supabase.from('responses').insert(responseRecords);
+    if (responsesError) throw responsesError;
+
+    return successResponse(h, { tag: payload.tag, nama: payload.nama }, 200, 'Chatbot tag updated successfully by ID');
+  } catch (err) {
+    console.error('Error in updateChatbotTag by ID:', err);
+    return errorResponse(h, 'Internal server error', 500);
+  }
+};
+

@@ -6,7 +6,9 @@ import {
   getChatbotTag,
   deleteChatbotTag,
   processChatbotInput,
-  getChatbotByNama
+  getChatbotByNama,
+  createChatbotTag,
+  updateChatbotTag
 } from '../controllers/chatbotController';
 
 const chatbotRoutes: ServerRoute[] = [
@@ -26,6 +28,37 @@ const chatbotRoutes: ServerRoute[] = [
     }
   },
   {
+    method: 'POST',
+    path: '/chatbot/create',
+    handler: createChatbotTag,
+    options: {
+      validate: {
+        payload: Joi.object({
+          nama: Joi.string().allow(null, '').optional(),
+          tag: Joi.string().required(),
+          input: Joi.array().items(Joi.string()).min(1).required(),
+          responses: Joi.array().items(Joi.string()).min(1).required()
+        })
+      }
+    }
+  },
+   {
+    method: 'PUT',
+    path: '/chatbot/update/{id}',
+    handler: updateChatbotTag,
+     options: {
+      validate: {
+        payload: Joi.object({
+          nama: Joi.string().allow(null, '').optional(),
+          tag: Joi.string().required(),
+          input: Joi.array().items(Joi.string()).min(1).required(),
+          responses: Joi.array().items(Joi.string()).min(1).required()
+        })
+      }
+    }
+  },
+
+  {
     method: 'GET',
     path: '/chatbot/tags',
     handler: getAllChatbotTags
@@ -37,12 +70,12 @@ const chatbotRoutes: ServerRoute[] = [
   },
   {
     method: 'GET',
-    path: '/chatbot/tags/{tag}',
+    path: '/chatbot/tags/{id}',
     handler: getChatbotTag
   },
   {
     method: 'DELETE',
-    path: '/chatbot/tags/{tag}',
+    path: '/chatbot/tags/{id}',
     handler: deleteChatbotTag
   },
   {
