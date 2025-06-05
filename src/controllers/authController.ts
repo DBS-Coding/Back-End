@@ -14,6 +14,7 @@ const JWT_EXPIRES_IN = '24h';
 interface UserPayload {
   id: string;
   email: string;
+  role?: string;
   name: string;
 }
 
@@ -45,9 +46,10 @@ const generateToken = (user: UserPayload): string => {
   return jwt.sign(user, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 };
 
-const getUserResponse = (user: any) => ({
+const getUserResponse = (user: UserPayload) => ({
   id: user.id,
   email: user.email,
+  role: user.role || 'user',
   name: user.name,
 });
 
@@ -82,6 +84,7 @@ export const registerUser = async (req: Request, h: ResponseToolkit) => {
       .insert([{
         email: payload.email,
         password_hash: passwordHash,
+        role: 'user', // Default role
         name: payload.name,
         created_at: new Date().toISOString(),
       }])
@@ -146,6 +149,7 @@ export const loginUser = async (req: Request, h: ResponseToolkit) => {
     const token = generateToken({
       id: user.id,
       email: user.email,
+      role: user.role || 'user',
       name: user.name,
     });
 
@@ -177,7 +181,7 @@ export const getCurrentUser = async (req: Request, h: ResponseToolkit) => {
     // Get user data
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, email, name, created_at')
+      .select('id, email, name, role, created_at')
       .eq('id', decoded.id)
       .single();
 
@@ -203,13 +207,11 @@ export const deleteUser = async (req: Request, h: ResponseToolkit) => {
       return errorResponse(h, 'Authorization token required', 401);
     }
 
-
     // Verify JWT token
     const decoded = jwt.verify(token, JWT_SECRET) as UserPayload;
-
      const { data: user } = await supabase
       .from('users')
-      .select('id, email, name, created_at')
+      .select('id, email, name, role, created_at')
       .eq('id', decoded.id)
       .single();
 
@@ -222,11 +224,9 @@ export const deleteUser = async (req: Request, h: ResponseToolkit) => {
       .from('users')
       .delete()
       .eq('id', decoded.id);
-    
     if (error) {
       return errorResponse(h, 'Failed to delete user', 500);
     }
-  
 
     return successResponse(h, 'successful', 200, 'User deleted successfully');
   } catch (err) {
