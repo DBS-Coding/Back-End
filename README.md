@@ -19,23 +19,22 @@ To set up the project locally, follow these steps:
 
 1. Clone the repository:
 
-   ```bash
-   git clone https://github.com/DBS-Coding/Back-End
-   cd Back-End
-   ```
-
-2. Install Supabase SDK:
+```bash
+git clone https://github.com/DBS-Coding/Back-End
+cd Back-End
 ```
-pip install supabase
+
+2. [Install Supabase SDK](https://github.com/supabase/cli#install-the-cli):
+```bash
+npm i supabase --save-dev
 ```
 
 2. Install the dependencies:
 
-   ```bash
-   bun install
-   ```
-
-   This will install both the project dependencies and the development tools, including Prettier, ESLint, TypeScript, and other necessary packages.
+```bash
+bun install
+```
+This will install both the project dependencies and the development tools, including Prettier, ESLint, TypeScript, and other necessary packages.
 
 3. Set up environment variables:
    - Create a `.env` file based on `.env.example`

@@ -23,6 +23,7 @@
     "eslint-plugin-prettier": "^5.2.6",
     "globals": "^16.0.0",
     "prettier": "^3.5.3",
+    "supabase": "^2.24.3",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.3",
     "typescript-eslint": "^8.31.0"
@@ -33,7 +34,7 @@
   "dependencies": {
     "@hapi/hapi": "^21.4.0",
     "@hapi/joi": "^17.1.1",
-    "@supabase/supabase-js": "^2.49.4",
+    "@supabase/supabase-js": "^2.49.10",
     "@types/bcrypt": "^5.0.2",
     "@types/jsonwebtoken": "^9.0.9",
     "bcrypt": "^6.0.0",
