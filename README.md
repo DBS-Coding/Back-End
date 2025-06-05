@@ -27,6 +27,8 @@ cd Back-End
 2. [Install Supabase SDK](https://github.com/supabase/cli#install-the-cli):
 ```bash
 npm i supabase --save-dev
+npx supabase login
+npx supabase link
 ```
 
 2. Install the dependencies:

@@ -4,8 +4,14 @@ import  chatbotRoutes  from '../routes/chatbot.routes';
 import  healthRoute from '../routes/health.routes';
 import { initWebSocket } from "../controllers/websocketController"
 import dotenv from 'dotenv';
+import { Pool } from 'pg';
 
 dotenv.config();
+
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
 export const initServer = async (): Promise<Server> => {
   const server = Hapi.server({
