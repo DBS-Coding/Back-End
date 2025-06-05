@@ -24,6 +24,11 @@ To set up the project locally, follow these steps:
    cd Back-End
    ```
 
+2. Install Supabase SDK:
+```
+pip install supabase
+```
+
 2. Install the dependencies:
 
    ```bash
