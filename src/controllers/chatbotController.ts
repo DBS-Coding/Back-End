@@ -416,7 +416,7 @@ export const updateChatbotTag = async (req: Request, h: ResponseToolkit) => {
       .select('*')
       .eq('id', id)
       .single();
-    
+
     // return successResponse(h, tag, 200, 'Tag found');
 
     if (tagError || !tag) {
@@ -468,16 +468,24 @@ export const updateChatbotTag = async (req: Request, h: ResponseToolkit) => {
 
 export const deleteChatbotAll = async (req: Request, h: ResponseToolkit) => {
   try {
-    if(req.params.db_key !== supabaseAnonKey) return errorResponse(h, 'Unauthorized', 401);
-    const { data: tags, error: tagsFetchError } = await supabase.from('tags').select('id');
+    if (req.params.db_key !== supabaseAnonKey)
+      return errorResponse(h, 'Unauthorized', 401);
+    const { data: tags, error: tagsFetchError } = await supabase
+      .from('tags')
+      .select('id');
     // return successResponse(h, tags, 200, 'tags');
     tags.forEach(async (tag) => {
       await supabase.from('inputs').delete().eq('tag_id', tag.id);
       await supabase.from('responses').delete().eq('tag_id', tag.id);
       await supabase.from('tags').delete().eq('id', tag.id);
-    })
+    });
 
-    return successResponse(h, null, 200, 'All chatbot data deleted successfully');
+    return successResponse(
+      h,
+      null,
+      200,
+      'All chatbot data deleted successfully',
+    );
   } catch (err) {
     console.error('Error in deleteChatbotAll:', err);
     return errorResponse(h, `Internal server error ${err.message}`, 500);

@@ -10,7 +10,10 @@ import {
 // Validation Schemas
 const registerValidation = Joi.object({
   email: Joi.string().email().required().description('User email address'),
-  password: Joi.string().min(6).required().description('User password (min 6 characters)'),
+  password: Joi.string()
+    .min(6)
+    .required()
+    .description('User password (min 6 characters)'),
   name: Joi.string().required().description('User full name'),
 });
 

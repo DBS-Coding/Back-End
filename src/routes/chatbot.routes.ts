@@ -9,7 +9,7 @@ import {
   getChatbotByNama,
   createChatbotTag,
   updateChatbotTag,
-  deleteChatbotAll
+  deleteChatbotAll,
 } from '../controllers/chatbotController';
 
 const chatbotRoutes: ServerRoute[] = [
@@ -23,10 +23,10 @@ const chatbotRoutes: ServerRoute[] = [
           nama: Joi.string().valid('soekarno', 'hatta').required(),
           tag: Joi.string().required(),
           input: Joi.array().items(Joi.string()).min(1).required(),
-          responses: Joi.array().items(Joi.string()).min(1).required()
-        })
-      }
-    }
+          responses: Joi.array().items(Joi.string()).min(1).required(),
+        }),
+      },
+    },
   },
   {
     method: 'POST',
@@ -35,49 +35,49 @@ const chatbotRoutes: ServerRoute[] = [
     options: {
       validate: {
         payload: Joi.object({
-          nama: Joi.string().valid('soekarno','hatta').required(),
+          nama: Joi.string().valid('soekarno', 'hatta').required(),
           tag: Joi.string().required(),
           input: Joi.array().items(Joi.string()).min(1).required(),
-          responses: Joi.array().items(Joi.string()).min(1).required()
-        })
-      }
-    }
+          responses: Joi.array().items(Joi.string()).min(1).required(),
+        }),
+      },
+    },
   },
-   {
+  {
     method: 'PUT',
     path: '/chatbot/update/{id}',
     handler: updateChatbotTag,
-     options: {
+    options: {
       validate: {
         payload: Joi.object({
-          nama: Joi.string().valid('soekarno','hatta').required(),
+          nama: Joi.string().valid('soekarno', 'hatta').required(),
           tag: Joi.string().required(),
           input: Joi.array().items(Joi.string()).min(1).required(),
-          responses: Joi.array().items(Joi.string()).min(1).required()
-        })
-      }
-    }
+          responses: Joi.array().items(Joi.string()).min(1).required(),
+        }),
+      },
+    },
   },
 
   {
     method: 'GET',
     path: '/chatbot/tags',
-    handler: getAllChatbotTags
+    handler: getAllChatbotTags,
   },
   {
     method: 'GET',
     path: '/chatbot/tags/nama/{nama}',
-    handler: getChatbotByNama
+    handler: getChatbotByNama,
   },
   {
     method: 'GET',
     path: '/chatbot/tags/{id}',
-    handler: getChatbotTag
+    handler: getChatbotTag,
   },
   {
     method: 'DELETE',
     path: '/chatbot/tags/{id}',
-    handler: deleteChatbotTag
+    handler: deleteChatbotTag,
   },
   {
     method: 'POST',
@@ -86,15 +86,15 @@ const chatbotRoutes: ServerRoute[] = [
     options: {
       validate: {
         payload: Joi.object({
-          input: Joi.string().required()
-        })
-      }
-    }
+          input: Joi.string().required(),
+        }),
+      },
+    },
   },
   {
     method: 'DELETE',
     path: '/chatbot/all/{db_key}',
-    handler: deleteChatbotAll
+    handler: deleteChatbotAll,
   },
 ];
 

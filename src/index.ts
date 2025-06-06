@@ -1,4 +1,4 @@
-import { initServer } from "./config/server";
+import { initServer } from './config/server';
 
 const start = async () => {
   const server = await initServer();

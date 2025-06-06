@@ -34,18 +34,6 @@ export const initServer = async (): Promise<Server> => {
     method: 'POST',
     path: '/chatnew',
     handler: async (request, h) => {
-      // const createTableSQL = `
-      //   ALTER TABLE tags ADD CONSTRAINT unique_tag_nama UNIQUE (tag_name, nama);
-      // `;
-      // try {
-      //   const client = await pool.connect();
-      //   await client.query(createTableSQL);
-      //   client.release();
-      //   return { message: 'Table products created successfully' };
-      // } catch (error) {
-      //   console.error(error);
-      //   return h.response({ error: 'Failed to create table' }).code(500);
-      // }
       return pool;
     },
   });
@@ -65,7 +53,9 @@ export const initServer = async (): Promise<Server> => {
         }
       } catch (error) {
         console.error('Database connection/query error:', error);
-        return h.response({ error: 'Failed to fetch users', detail: error.message }).code(500);
+        return h
+          .response({ error: 'Failed to fetch users', detail: error.message })
+          .code(500);
       }
     },
   });

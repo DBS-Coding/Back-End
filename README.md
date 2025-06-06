@@ -1,8 +1,9 @@
-# HistoTalk - Backend
+# HistoTalk - Backend HistoTalk
 
 This project is part of the Capstone Project for 2025 and is focused on building a backend application using Node.js with TypeScript. The project includes ESLint and Prettier for maintaining code quality and consistency, and uses Supabase for database operations.
 
 ## Table of Contents
+
 - [Installation](#installation)
 - [Usage](#usage)
 - [Development](#development)
@@ -25,6 +26,7 @@ cd Back-End
 ```
 
 2. [Install Supabase SDK](https://github.com/supabase/cli#install-the-cli):
+
 ```bash
 npm i supabase --save-dev
 npx supabase login
@@ -36,6 +38,7 @@ npx supabase link
 ```bash
 bun install
 ```
+
 This will install both the project dependencies and the development tools, including Prettier, ESLint, TypeScript, and other necessary packages.
 
 3. Set up environment variables:
@@ -82,9 +85,11 @@ The following NPM scripts are available:
 ## Dependencies
 
 ### Peer Dependencies:
+
 - `typescript@^5.8.3`: The TypeScript version used for compiling the project.
 
 ### Development Dependencies:
+
 - `@eslint/js@^9.25.1`: ESLint's default rules
 - `eslint@^9.25.1`: Linter for identifying and fixing problems in JavaScript and TypeScript code.
 - `eslint-plugin-prettier@^5.2.6`: ESLint plugin to run Prettier as a rule.
@@ -95,6 +100,7 @@ The following NPM scripts are available:
 - `prettier@^3.5.3`: Code formatter for ensuring consistent code style.
 
 ### Production Dependencies:
+
 - `@hapi/hapi@^21.4.0`: A powerful and flexible web framework for Node.js.
 - `@hapi/joi@^17.1.1`: Schema validation library.
 - `@supabase/supabase-js@^2.49.4`: Supabase client library.
@@ -106,12 +112,15 @@ The following NPM scripts are available:
 ## Configuration
 
 ### ESLint Configuration
+
 The ESLint configuration is included in the `.eslintrc.json` file. The project uses the recommended ESLint rules and integrates Prettier for formatting.
 
 ### Prettier Configuration
+
 The Prettier configuration is defined in the `.prettierrc` file, ensuring consistent code formatting across the project.
 
 ### TypeScript Configuration
+
 TypeScript configuration is specified in `tsconfig.json`.
 
 ## API Documentation
@@ -121,6 +130,7 @@ For comprehensive API documentation, please refer to our Postman documentation:
 [![Postman API Documentation](https://img.shields.io/badge/Postman-API_Documentation-orange?style=flat-square)](https://documenter.getpostman.com/view/22804089/2sB2qWJ4qr)
 
 This includes:
+
 - All available endpoints
 - Request/response examples
 - Authentication requirements
@@ -131,6 +141,7 @@ This includes:
 The API uses JSON for request and response bodies. Here are some examples:
 
 ### Authentication Request
+
 ```json
 {
   "email": "user@example.com",
@@ -139,6 +150,7 @@ The API uses JSON for request and response bodies. Here are some examples:
 ```
 
 ### User Registration Response
+
 ```json
 {
   "id": "123e4567-e89b-12d3-a456-426614174000",
@@ -148,6 +160,7 @@ The API uses JSON for request and response bodies. Here are some examples:
 ```
 
 ### Error Response
+
 ```json
 {
   "statusCode": 400,
@@ -161,6 +174,7 @@ The API uses JSON for request and response bodies. Here are some examples:
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 Key improvements made:
+
 1. Added **API Documentation** section with Postman badge/link
 2. Added **Sample JSON** section with request/response examples
 3. Included all dependencies from your package.json

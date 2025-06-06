@@ -1,5 +1,5 @@
-import { Server } from "@hapi/hapi";
-import WebSocket, { WebSocketServer } from "ws";
+import { Server } from '@hapi/hapi';
+import WebSocket, { WebSocketServer } from 'ws';
 
 interface CustomWebSocket extends WebSocket {
   id: string;
@@ -10,13 +10,13 @@ export const initWebSocket = (server: Server) => {
 
   const clients = new Map<string, CustomWebSocket>();
 
-  wss.on("connection", (ws: CustomWebSocket) => {
+  wss.on('connection', (ws: CustomWebSocket) => {
     ws.id = Math.random().toString(36).substring(2, 9);
     clients.set(ws.id, ws);
 
     console.log(`New client connected: ${ws.id}`);
 
-    ws.on("message", (message: string) => {
+    ws.on('message', (message: string) => {
       clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(`User ${ws.id}: ${message}`);
@@ -24,10 +24,10 @@ export const initWebSocket = (server: Server) => {
       });
     });
 
-    ws.on("close", () => {
+    ws.on('close', () => {
       clients.delete(ws.id);
     });
   });
 
-  console.log("WebSocket server is running");
+  console.log('WebSocket server is running');
 };

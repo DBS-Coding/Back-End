@@ -81,13 +81,15 @@ export const registerUser = async (req: Request, h: ResponseToolkit) => {
     // Create new user
     const { data: user, error: insertError } = await supabase
       .from('users')
-      .insert([{
-        email: payload.email,
-        password_hash: passwordHash,
-        role: 'user', // Default role
-        name: payload.name,
-        created_at: new Date().toISOString(),
-      }])
+      .insert([
+        {
+          email: payload.email,
+          password_hash: passwordHash,
+          role: 'user', // Default role
+          name: payload.name,
+          created_at: new Date().toISOString(),
+        },
+      ])
       .select()
       .single();
 
@@ -140,7 +142,10 @@ export const loginUser = async (req: Request, h: ResponseToolkit) => {
     }
 
     // Verify password
-    const passwordMatch = await bcrypt.compare(payload.password, user.password_hash);
+    const passwordMatch = await bcrypt.compare(
+      payload.password,
+      user.password_hash,
+    );
     if (!passwordMatch) {
       return errorResponse(h, 'Invalid email or password', 401);
     }
@@ -189,7 +194,12 @@ export const getCurrentUser = async (req: Request, h: ResponseToolkit) => {
       return errorResponse(h, 'User not found', 404);
     }
 
-    return successResponse(h, getUserResponse(user), 200, 'User data retrieved');
+    return successResponse(
+      h,
+      getUserResponse(user),
+      200,
+      'User data retrieved',
+    );
   } catch (err) {
     console.error('Error in getCurrentUser:', err);
     if (err instanceof jwt.JsonWebTokenError) {
@@ -201,7 +211,6 @@ export const getCurrentUser = async (req: Request, h: ResponseToolkit) => {
 
 export const deleteUser = async (req: Request, h: ResponseToolkit) => {
   try {
-
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
       return errorResponse(h, 'Authorization token required', 401);
@@ -209,7 +218,7 @@ export const deleteUser = async (req: Request, h: ResponseToolkit) => {
 
     // Verify JWT token
     const decoded = jwt.verify(token, JWT_SECRET) as UserPayload;
-     const { data: user } = await supabase
+    const { data: user } = await supabase
       .from('users')
       .select('id, email, name, role, created_at')
       .eq('id', decoded.id)
@@ -218,7 +227,7 @@ export const deleteUser = async (req: Request, h: ResponseToolkit) => {
     if (!user) {
       return errorResponse(h, 'User not found', 404);
     }
-    
+
     // Delete user
     const { error } = await supabase
       .from('users')
