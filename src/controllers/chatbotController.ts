@@ -1,5 +1,5 @@
 import { Request, ResponseToolkit } from '@hapi/hapi';
-import { supabase } from '../config/supabaseClient';
+import { supabase, supabaseAnonKey } from '../config/supabaseClient';
 import { successResponse, errorResponse } from '../utils/responseUtils';
 import Joi from 'joi';
 
@@ -27,11 +27,6 @@ export const createOrUpdateChatbotTag = async (
   try {
     const payload = req.payload as ChatbotData;
 
-    // Validasi: hanya boleh "soekarno" atau "hatta"
-    if (!['soekarno', 'hatta'].includes(payload.nama)) {
-      return errorResponse(h, 'Nama harus "soekarno" atau "hatta"', 400);
-    }
-
     // Cari tag yang cocok berdasarkan tag_name dan nama
     const { data: existingTag, error: findError } = await supabase
       .from('tags')
@@ -39,6 +34,7 @@ export const createOrUpdateChatbotTag = async (
       .eq('tag_name', payload.tag)
       .eq('nama', payload.nama)
       .single();
+    // return successResponse(h, existingTag, 200, 'Tag found');
 
     if (findError && findError.code !== 'PGRST116') throw findError;
 
@@ -420,6 +416,8 @@ export const updateChatbotTag = async (req: Request, h: ResponseToolkit) => {
       .select('*')
       .eq('id', id)
       .single();
+    
+    // return successResponse(h, tag, 200, 'Tag found');
 
     if (tagError || !tag) {
       return errorResponse(h, 'Tag not found', 404);
@@ -464,7 +462,24 @@ export const updateChatbotTag = async (req: Request, h: ResponseToolkit) => {
       'Chatbot tag updated successfully by ID',
     );
   } catch (err) {
-    console.error('Error in updateChatbotTag by ID:', err);
-    return errorResponse(h, 'Internal server error', 500);
+    return errorResponse(h, `Internal server error ${err.message}`, 500);
+  }
+};
+
+export const deleteChatbotAll = async (req: Request, h: ResponseToolkit) => {
+  try {
+    if(req.params.db_key !== supabaseAnonKey) return errorResponse(h, 'Unauthorized', 401);
+    const { data: tags, error: tagsFetchError } = await supabase.from('tags').select('id');
+    // return successResponse(h, tags, 200, 'tags');
+    tags.forEach(async (tag) => {
+      await supabase.from('inputs').delete().eq('tag_id', tag.id);
+      await supabase.from('responses').delete().eq('tag_id', tag.id);
+      await supabase.from('tags').delete().eq('id', tag.id);
+    })
+
+    return successResponse(h, null, 200, 'All chatbot data deleted successfully');
+  } catch (err) {
+    console.error('Error in deleteChatbotAll:', err);
+    return errorResponse(h, `Internal server error ${err.message}`, 500);
   }
 };

@@ -8,7 +8,8 @@ import {
   processChatbotInput,
   getChatbotByNama,
   createChatbotTag,
-  updateChatbotTag
+  updateChatbotTag,
+  deleteChatbotAll
 } from '../controllers/chatbotController';
 
 const chatbotRoutes: ServerRoute[] = [
@@ -34,7 +35,7 @@ const chatbotRoutes: ServerRoute[] = [
     options: {
       validate: {
         payload: Joi.object({
-          nama: Joi.string().valid('Soekarno','Hatta').required(),
+          nama: Joi.string().valid('soekarno','hatta').required(),
           tag: Joi.string().required(),
           input: Joi.array().items(Joi.string()).min(1).required(),
           responses: Joi.array().items(Joi.string()).min(1).required()
@@ -49,7 +50,7 @@ const chatbotRoutes: ServerRoute[] = [
      options: {
       validate: {
         payload: Joi.object({
-          nama: Joi.string().valid('Soekarno','Hatta').required(),
+          nama: Joi.string().valid('soekarno','hatta').required(),
           tag: Joi.string().required(),
           input: Joi.array().items(Joi.string()).min(1).required(),
           responses: Joi.array().items(Joi.string()).min(1).required()
@@ -89,7 +90,12 @@ const chatbotRoutes: ServerRoute[] = [
         })
       }
     }
-  }
+  },
+  {
+    method: 'DELETE',
+    path: '/chatbot/all/{db_key}',
+    handler: deleteChatbotAll
+  },
 ];
 
 export default chatbotRoutes;
