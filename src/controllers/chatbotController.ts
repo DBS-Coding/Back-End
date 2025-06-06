@@ -296,18 +296,6 @@ export const processChatbotInput = async (req: Request, h: ResponseToolkit) => {
       return errorResponse(h, validationError.details[0].message, 400);
     }
 
-    // Check if tag already exists
-    const { data: existingTag, error: fetchError } = await supabase
-      .from('tags')
-      .select()
-      .eq('tag_name', payload.tag)
-      .single();
-
-    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
-    if (existingTag) {
-      return errorResponse(h, 'Tag already exists. Use update endpoint instead.', 409);
-    }
-
     // Insert new tag
     const { data: tag, error: tagError } = await supabase
       .from('tags')
