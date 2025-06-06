@@ -16,53 +16,99 @@ const chatbotSchema = Joi.object({
   nama: Joi.string().allow(null, '').optional(),
   tag: Joi.string().required(),
   input: Joi.array().items(Joi.string()).min(1).required(),
-  responses: Joi.array().items(Joi.string()).min(1).required()
+  responses: Joi.array().items(Joi.string()).min(1).required(),
 });
 
 // Create or update a chatbot tag with its inputs and responses
-export const createOrUpdateChatbotTag = async (req: Request, h: ResponseToolkit) => {
+export const createOrUpdateChatbotTag = async (
+  req: Request,
+  h: ResponseToolkit,
+) => {
   try {
     const payload = req.payload as ChatbotData;
 
-    // Validate input
-    const { error: validationError } = chatbotSchema.validate(payload);
-    if (validationError) {
-      return errorResponse(h, validationError.details[0].message, 400);
+    // Validasi: hanya boleh "soekarno" atau "hatta"
+    if (!['soekarno', 'hatta'].includes(payload.nama)) {
+      return errorResponse(h, 'Nama harus "soekarno" atau "hatta"', 400);
     }
 
-    // Start a transaction: insert or update tag
-    const { data: tag, error: tagError } = await supabase
+    // Cari tag yang cocok berdasarkan tag_name dan nama
+    const { data: existingTag, error: findError } = await supabase
       .from('tags')
-      .upsert(
-        { tag_name: payload.tag, nama: payload.nama || null },
-        { onConflict: 'tag_name' }
-      )
-      .select()
+      .select('*')
+      .eq('tag_name', payload.tag)
+      .eq('nama', payload.nama)
       .single();
 
-    if (tagError) throw tagError;
+    if (findError && findError.code !== 'PGRST116') throw findError;
 
-    // Delete old inputs and responses
-    await supabase.from('inputs').delete().eq('tag_id', tag.id);
-    await supabase.from('responses').delete().eq('tag_id', tag.id);
+    let tagId: number;
 
-    // Insert new inputs
-    const inputRecords = payload.input.map(text => ({
-      tag_id: tag.id,
-      input_text: text
-    }));
-    const { error: inputsError } = await supabase.from('inputs').insert(inputRecords);
-    if (inputsError) throw inputsError;
+    if (!existingTag) {
+      // Insert tag baru jika belum ada
+      const { data: newTag, error: insertError } = await supabase
+        .from('tags')
+        .insert({ tag_name: payload.tag, nama: payload.nama })
+        .select()
+        .single();
 
-    // Insert new responses
-    const responseRecords = payload.responses.map(text => ({
-      tag_id: tag.id,
-      response_text: text
-    }));
-    const { error: responsesError } = await supabase.from('responses').insert(responseRecords);
-    if (responsesError) throw responsesError;
+      if (insertError) throw insertError;
+      tagId = newTag.id;
+    } else {
+      tagId = existingTag.id;
+    }
 
-    return successResponse(h, { tag: tag.tag_name, nama: tag.nama }, 201, 'Chatbot tag created/updated successfully');
+    // Ambil data input & response lama
+    const { data: oldInputs = [] } = await supabase
+      .from('inputs')
+      .select('input_text')
+      .eq('tag_id', tagId);
+
+    const { data: oldResponses = [] } = await supabase
+      .from('responses')
+      .select('response_text')
+      .eq('tag_id', tagId);
+
+    // Filter input/response baru yang belum ada
+    const newInputs = payload.input
+      .filter((i) => !oldInputs.some((old) => old.input_text === i))
+      .map((i) => ({
+        tag_id: tagId,
+        input_text: i,
+      }));
+
+    const newResponses = payload.responses
+      .filter((r) => !oldResponses.some((old) => old.response_text === r))
+      .map((r) => ({
+        tag_id: tagId,
+        response_text: r,
+      }));
+
+    if (newInputs.length > 0) {
+      const { error: inputInsertError } = await supabase
+        .from('inputs')
+        .insert(newInputs);
+      if (inputInsertError) throw inputInsertError;
+    }
+
+    if (newResponses.length > 0) {
+      const { error: responseInsertError } = await supabase
+        .from('responses')
+        .insert(newResponses);
+      if (responseInsertError) throw responseInsertError;
+    }
+
+    return successResponse(
+      h,
+      {
+        tag: payload.tag,
+        nama: payload.nama,
+        added_inputs: newInputs.length,
+        added_responses: newResponses.length,
+      },
+      201,
+      existingTag ? 'Tag diperbarui (data ditambahkan)' : 'Tag baru dibuat',
+    );
   } catch (err) {
     console.error('Error in createOrUpdateChatbotTag:', err);
     return errorResponse(h, 'Internal server error', 500);
@@ -80,7 +126,7 @@ export const getAllChatbotTags = async (req: Request, h: ResponseToolkit) => {
     if (tagsError) throw tagsError;
 
     const result = await Promise.all(
-      tags.map(async tag => {
+      tags.map(async (tag) => {
         const { data: inputs } = await supabase
           .from('inputs')
           .select('input_text')
@@ -95,10 +141,10 @@ export const getAllChatbotTags = async (req: Request, h: ResponseToolkit) => {
           id: tag.id,
           tag: tag.tag_name,
           nama: tag.nama,
-          input: inputs?.map(i => i.input_text) || [],
-          responses: responses?.map(r => r.response_text) || []
+          input: inputs?.map((i) => i.input_text) || [],
+          responses: responses?.map((r) => r.response_text) || [],
         };
-      })
+      }),
     );
 
     return successResponse(h, result, 200, 'Chatbot data retrieved');
@@ -119,7 +165,7 @@ export const getChatbotTag = async (req: Request, h: ResponseToolkit) => {
     const { data: tag, error: tagError } = await supabase
       .from('tags')
       .select('*')
-     .eq('id', id)
+      .eq('id', id)
       .single();
 
     if (tagError || !tag) {
@@ -137,11 +183,11 @@ export const getChatbotTag = async (req: Request, h: ResponseToolkit) => {
       .eq('tag_id', tag.id);
 
     const result = {
-      id : tag.id,
+      id: tag.id,
       tag: tag.tag_name,
       nama: tag.nama,
-      input: inputs?.map(i => i.input_text) || [],
-      responses: responses?.map(r => r.response_text) || []
+      input: inputs?.map((i) => i.input_text) || [],
+      responses: responses?.map((r) => r.response_text) || [],
     };
 
     return successResponse(h, result, 200, 'Chatbot tag retrieved');
@@ -167,11 +213,16 @@ export const getChatbotByNama = async (req: Request, h: ResponseToolkit) => {
     if (tagsError) throw tagsError;
 
     if (!tags || tags.length === 0) {
-      return successResponse(h, [], 200, 'No chatbot found with the given name');
+      return successResponse(
+        h,
+        [],
+        200,
+        'No chatbot found with the given name',
+      );
     }
 
     const result = await Promise.all(
-      tags.map(async tag => {
+      tags.map(async (tag) => {
         const { data: inputs } = await supabase
           .from('inputs')
           .select('input_text')
@@ -186,25 +237,24 @@ export const getChatbotByNama = async (req: Request, h: ResponseToolkit) => {
           id: tag.id,
           tag: tag.tag_name,
           nama: tag.nama,
-          input: inputs?.map(i => i.input_text) || [],
-          responses: responses?.map(r => r.response_text) || []
+          input: inputs?.map((i) => i.input_text) || [],
+          responses: responses?.map((r) => r.response_text) || [],
         };
-      })
+      }),
     );
     return successResponse(h, result, 200, 'Chatbots retrieved by name');
   } catch (err) {
     console.error('Error in getChatbotByNama:', err);
     return errorResponse(h, 'Internal server error', 500);
   }
-}
-
+};
 
 // Delete a chatbot tag
 export const deleteChatbotTag = async (req: Request, h: ResponseToolkit) => {
   try {
-    const id = parseInt(req.params.id); 
+    const id = parseInt(req.params.id);
 
-     const { data: tag, error: tagError } = await supabase
+    const { data: tag, error: tagError } = await supabase
       .from('tags')
       .select('id')
       .eq('id', id)
@@ -247,9 +297,9 @@ export const processChatbotInput = async (req: Request, h: ResponseToolkit) => {
     if (!matchedInput || matchedInput.length === 0) {
       return successResponse(
         h,
-        { response: "Maaf, saya tidak mengerti pertanyaan Anda." },
+        { response: 'Maaf, saya tidak mengerti pertanyaan Anda.' },
         200,
-        'No matching tag found'
+        'No matching tag found',
       );
     }
 
@@ -265,19 +315,20 @@ export const processChatbotInput = async (req: Request, h: ResponseToolkit) => {
     if (!responses || responses.length === 0) {
       return successResponse(
         h,
-        { response: "Maaf, saya tidak memiliki jawaban untuk pertanyaan ini." },
+        { response: 'Maaf, saya tidak memiliki jawaban untuk pertanyaan ini.' },
         200,
-        'No responses found for tag'
+        'No responses found for tag',
       );
     }
 
-    const randomResponse = responses[Math.floor(Math.random() * responses.length)].response_text;
+    const randomResponse =
+      responses[Math.floor(Math.random() * responses.length)].response_text;
 
     return successResponse(
       h,
       { response: randomResponse },
       200,
-      'Response found'
+      'Response found',
     );
   } catch (err) {
     console.error('Error in processChatbotInput:', err);
@@ -285,9 +336,8 @@ export const processChatbotInput = async (req: Request, h: ResponseToolkit) => {
   }
 };
 
-
-  // create chat bot 
-  export const createChatbotTag = async (req: Request, h: ResponseToolkit) => {
+// create chat bot
+export const createChatbotTag = async (req: Request, h: ResponseToolkit) => {
   try {
     const payload = req.payload as ChatbotData;
 
@@ -305,7 +355,11 @@ export const processChatbotInput = async (req: Request, h: ResponseToolkit) => {
 
     if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
     if (existingTag) {
-      return errorResponse(h, 'Tag already exists. Use update endpoint instead.', 409);
+      return errorResponse(
+        h,
+        'Tag already exists. Use update endpoint instead.',
+        409,
+      );
     }
 
     // Insert new tag
@@ -318,32 +372,41 @@ export const processChatbotInput = async (req: Request, h: ResponseToolkit) => {
     if (tagError) throw tagError;
 
     // Insert inputs
-    const inputRecords = payload.input.map(text => ({
+    const inputRecords = payload.input.map((text) => ({
       tag_id: tag.id,
-      input_text: text
+      input_text: text,
     }));
-    const { error: inputsError } = await supabase.from('inputs').insert(inputRecords);
+    const { error: inputsError } = await supabase
+      .from('inputs')
+      .insert(inputRecords);
     if (inputsError) throw inputsError;
 
     // Insert responses
-    const responseRecords = payload.responses.map(text => ({
+    const responseRecords = payload.responses.map((text) => ({
       tag_id: tag.id,
-      response_text: text
+      response_text: text,
     }));
-    const { error: responsesError } = await supabase.from('responses').insert(responseRecords);
+    const { error: responsesError } = await supabase
+      .from('responses')
+      .insert(responseRecords);
     if (responsesError) throw responsesError;
 
-    return successResponse(h, { tag: tag.tag_name, nama: tag.nama }, 201, 'Chatbot tag created successfully');
+    return successResponse(
+      h,
+      { tag: tag.tag_name, nama: tag.nama },
+      201,
+      'Chatbot tag created successfully',
+    );
   } catch (err) {
     console.error('Error in createChatbotTag:', err);
     return errorResponse(h, 'Internal server error', 500);
   }
 };
 
-// Update an chat bot 
+// Update an chat bot
 export const updateChatbotTag = async (req: Request, h: ResponseToolkit) => {
   try {
-    const id = parseInt(req.params.id); 
+    const id = parseInt(req.params.id);
     const payload = req.payload as ChatbotData;
 
     const { error: validationError } = chatbotSchema.validate(payload);
@@ -375,25 +438,33 @@ export const updateChatbotTag = async (req: Request, h: ResponseToolkit) => {
     await supabase.from('responses').delete().eq('tag_id', id);
 
     // Insert input baru
-    const inputRecords = payload.input.map(text => ({
+    const inputRecords = payload.input.map((text) => ({
       tag_id: id,
-      input_text: text
+      input_text: text,
     }));
-    const { error: inputsError } = await supabase.from('inputs').insert(inputRecords);
+    const { error: inputsError } = await supabase
+      .from('inputs')
+      .insert(inputRecords);
     if (inputsError) throw inputsError;
 
     // Insert response baru
-    const responseRecords = payload.responses.map(text => ({
+    const responseRecords = payload.responses.map((text) => ({
       tag_id: id,
-      response_text: text
+      response_text: text,
     }));
-    const { error: responsesError } = await supabase.from('responses').insert(responseRecords);
+    const { error: responsesError } = await supabase
+      .from('responses')
+      .insert(responseRecords);
     if (responsesError) throw responsesError;
 
-    return successResponse(h, { tag: payload.tag, nama: payload.nama }, 200, 'Chatbot tag updated successfully by ID');
+    return successResponse(
+      h,
+      { tag: payload.tag, nama: payload.nama },
+      200,
+      'Chatbot tag updated successfully by ID',
+    );
   } catch (err) {
     console.error('Error in updateChatbotTag by ID:', err);
     return errorResponse(h, 'Internal server error', 500);
   }
 };
-

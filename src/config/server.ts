@@ -1,16 +1,20 @@
 import Hapi, { Server } from '@hapi/hapi';
 import authRoutes from '../routes/auth.routes';
-import  chatbotRoutes  from '../routes/chatbot.routes';
-import  healthRoute from '../routes/health.routes';
-import { initWebSocket } from "../controllers/websocketController"
+import chatbotRoutes from '../routes/chatbot.routes';
+import healthRoute from '../routes/health.routes';
+import { initWebSocket } from '../controllers/websocketController';
 import dotenv from 'dotenv';
 import { Pool } from 'pg';
 
 dotenv.config();
 
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  user: 'postgres',
+  host: 'lyznkzlfhkcrmvaielrx.supabase.co',
+  database: 'postgres',
+  password: 'O0aU1F15cwa0prqh',
+  port: 5432,
+  ssl: { rejectUnauthorized: false },
 });
 
 export const initServer = async (): Promise<Server> => {
@@ -23,6 +27,46 @@ export const initServer = async (): Promise<Server> => {
         credentials: true,
         additionalHeaders: ['authorization', 'content-type'],
       },
+    },
+  });
+
+  server.route({
+    method: 'POST',
+    path: '/chatnew',
+    handler: async (request, h) => {
+      // const createTableSQL = `
+      //   ALTER TABLE tags ADD CONSTRAINT unique_tag_nama UNIQUE (tag_name, nama);
+      // `;
+      // try {
+      //   const client = await pool.connect();
+      //   await client.query(createTableSQL);
+      //   client.release();
+      //   return { message: 'Table products created successfully' };
+      // } catch (error) {
+      //   console.error(error);
+      //   return h.response({ error: 'Failed to create table' }).code(500);
+      // }
+      return pool;
+    },
+  });
+
+  server.route({
+    method: 'GET',
+    path: '/users',
+    handler: async (request, h) => {
+      // return pool;
+      try {
+        const client = await pool.connect();
+        const res = await client.query('SELECT * FROM users');
+        try {
+          return res;
+        } finally {
+          client.release();
+        }
+      } catch (error) {
+        console.error('Database connection/query error:', error);
+        return h.response({ error: 'Failed to fetch users', detail: error.message }).code(500);
+      }
     },
   });
 
