@@ -321,7 +321,7 @@ export const processChatbotInput = async (req: Request, h: ResponseToolkit) => {
     const { error: responsesError } = await supabase.from('responses').insert(responseRecords);
     if (responsesError) throw responsesError;
 
-    return successResponse(h, { tag: tag.tag_name, nama: tag.nama }, 201, 'Chatbot tag created successfully');
+    return successResponse(h, { tag: tag.tag_name }, 201, 'Chatbot tag created successfully');
   } catch (err) {
     console.error('Error in createChatbotTag:', err);
     return errorResponse(h, 'Internal server error', 500);

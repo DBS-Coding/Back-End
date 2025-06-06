@@ -19,7 +19,7 @@ const chatbotRoutes: ServerRoute[] = [
     options: {
       validate: {
         payload: Joi.object({
-          nama: Joi.string().allow(null, '').optional(),
+          nama: Joi.string().valid('Soekarno','Hatta').required(),
           tag: Joi.string().required(),
           input: Joi.array().items(Joi.string()).min(1).required(),
           responses: Joi.array().items(Joi.string()).min(1).required()
@@ -34,7 +34,7 @@ const chatbotRoutes: ServerRoute[] = [
     options: {
       validate: {
         payload: Joi.object({
-          nama: Joi.string().allow(null, '').optional(),
+          nama: Joi.string().valid('Soekarno','Hatta').required(),
           tag: Joi.string().required(),
           input: Joi.array().items(Joi.string()).min(1).required(),
           responses: Joi.array().items(Joi.string()).min(1).required()
@@ -49,7 +49,7 @@ const chatbotRoutes: ServerRoute[] = [
      options: {
       validate: {
         payload: Joi.object({
-          nama: Joi.string().allow(null, '').optional(),
+          nama: Joi.string().valid('Soekarno','Hatta').required(),
           tag: Joi.string().required(),
           input: Joi.array().items(Joi.string()).min(1).required(),
           responses: Joi.array().items(Joi.string()).min(1).required()
