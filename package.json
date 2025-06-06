@@ -12,6 +12,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "git:push": "sh -c 'git add . && git commit -m \"$1\" && git push' _",
+    "git:pull": "git pull",
     "db:create": "supabase migration new",
     "db:push": "supabase db push --linked",
     "db:reset": "supabase db reset --linked"
