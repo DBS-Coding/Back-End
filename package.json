@@ -11,6 +11,8 @@
     "deploy": "bun run build && vercel --prod",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "git:push": "sh -c 'git add . && git commit -m \"$*\" && git push' dummy",
+    "git:pull": "git pull",
     "db:create": "supabase migration new",
     "db:push": "supabase db push --linked",
     "db:reset": "supabase db reset --linked"
