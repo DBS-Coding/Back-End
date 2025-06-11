@@ -10,9 +10,9 @@ dotenv.config();
 
 export const pool = new Pool({
   user: 'postgres',
-  host: 'lyznkzlfhkcrmvaielrx.supabase.co',
+  host: '',
   database: 'postgres',
-  password: 'O0aU1F15cwa0prqh',
+  password: '',
   port: 5432,
   ssl: { rejectUnauthorized: false },
 });
